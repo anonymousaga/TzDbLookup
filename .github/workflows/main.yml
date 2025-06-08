@@ -1,20 +1,22 @@
-permissions:
-  contents: write
-
-name: Update tz_data.h
+name: Update tz_data.h and bump patch version
 
 on:
   schedule:
     - cron: '0 0 * * 1'   # Every Monday at 00:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  update-tz:
+  update-and-tag:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   # Fetch all history and tags
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -27,12 +29,62 @@ jobs:
     - name: Run tz data update script
       run: python3 scripts/update_tz_data.py
 
-    - name: Commit and push if tz_data.h changed
+    - name: Check if tz_data.h changed
+      id: check_changes
+      run: |
+        git add src/tz_data.h
+        if git diff --cached --quiet; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit tz_data.h changes if any
+      if: steps.check_changes.outputs.changed == 'true'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add src/tz_data.h
-        git diff --cached --quiet || git commit -m "Update tz_data.h from zones.csv"
+        git commit -m "Update tz_data.h from zones.csv"
         git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get latest tag
+      if: steps.check_changes.outputs.changed == 'true'
+      id: get_tag
+      run: |
+        latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n1)
+        echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+    - name: Bump patch version and update version in library.properties
+      if: steps.check_changes.outputs.changed == 'true'
+      run: |
+        latest_tag=${{ steps.get_tag.outputs.latest_tag }}
+        echo "Latest tag: $latest_tag"
+
+        if [[ ! $latest_tag =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+          echo "No valid tag found, defaulting to v0.0.0"
+          major=0
+          minor=0
+          patch=0
+        else
+          major=${BASH_REMATCH[1]}
+          minor=${BASH_REMATCH[2]}
+          patch=${BASH_REMATCH[3]}
+        fi
+
+        patch=$((patch + 1))
+        new_version="$major.$minor.$patch"
+        new_tag="v$new_version"
+        echo "New version: $new_version"
+        echo "New tag: $new_tag"
+
+        # Update version in library.properties
+        sed -i "s/^version=.*/version=$new_version/" library.properties
+
+        # Commit updated library.properties
+        git add library.properties
+        git commit -m "Bump library version to $new_version"
+        git push
+
+        # Create and push new tag
+        git tag $new_tag
+        git push origin $new_tag
