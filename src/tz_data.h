@@ -14,6 +14,8 @@ static const TzEntry tzTable[] PROGMEM = {
   {"Africa/Bamako", "GMT0"},
   {"Africa/Bangui", "WAT-1"},
   {"Africa/Banjul", "GMT0"},
+  {"Africa/Bissau", "GMT0"},
+  {"Africa/Blantyre", "CAT-2"},
   {"Africa/Brazzaville", "WAT-1"},
   {"Africa/Bujumbura", "CAT-2"},
   {"Africa/Cairo", "EET-2EEST,M4.5.5/0,M10.5.4/24"},
