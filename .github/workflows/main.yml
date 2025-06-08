@@ -1,0 +1,31 @@
+name: Update tz_data.h
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'     # Every Monday at 00:00 UTC
+  workflow_dispatch:       # Also allow manual trigger
+
+jobs:
+  update-tz:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Run tz data update script
+      run: |
+        python3 scripts/update_tz_data.py
+
+    - name: Commit and push if changed
+      run: |
+        git add src/tz_data.h
+        git diff --cached --quiet || git commit -m "Update tz_data.h from zones.csv"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
