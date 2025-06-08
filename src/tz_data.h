@@ -1,9 +1,12 @@
-struct TZMapping {
+#pragma once
+
+struct TzEntry {
   const char* iana;
   const char* posix;
 };
 
-const TZMapping timezoneTable[] = {
+static const TzEntry tzTable[] PROGMEM = {
+  {"Africa/Abidjan", "GMT0"},
   {"Africa/Accra", "GMT0"},
   {"Africa/Addis_Ababa", "EAT-3"},
   {"Africa/Algiers", "CET-1"},
@@ -464,5 +467,5 @@ const TZMapping timezoneTable[] = {
   {"Etc/Greenwich", "GMT0"},
   {"Etc/Universal", "UTC0"},
   {"Etc/Zulu", "UTC0"},
-  {nullptr, nullptr}
 };
+static const size_t tzCount = sizeof(tzTable) / sizeof(tzTable[0]);
