@@ -1,4 +1,4 @@
-name: Update tz_data.h and bump patch version
+name: Update tz_data.h and bump patch version from library.properties
 
 on:
   schedule:
@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0   # Fetch all history and tags
+        fetch-depth: 0   # Full history + tags
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -47,21 +47,17 @@ jobs:
         git commit -m "Update tz_data.h from zones.csv"
         git push
 
-    - name: Get latest tag
-      if: steps.check_changes.outputs.changed == 'true'
-      id: get_tag
-      run: |
-        latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n1)
-        echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
-
-    - name: Bump patch version and update version in library.properties
+    - name: Bump patch version from library.properties and tag
       if: steps.check_changes.outputs.changed == 'true'
       run: |
-        latest_tag=${{ steps.get_tag.outputs.latest_tag }}
-        echo "Latest tag: $latest_tag"
+        # Read current version from library.properties
+        version_line=$(grep '^version=' library.properties)
+        version="${version_line#version=}"
+        echo "Current version: $version"
 
-        if [[ ! $latest_tag =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-          echo "No valid tag found, defaulting to v0.0.0"
+        # Parse major, minor, patch
+        if [[ ! $version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+          echo "Invalid version format, defaulting to 0.0.0"
           major=0
           minor=0
           patch=0
@@ -80,7 +76,7 @@ jobs:
         # Update version in library.properties
         sed -i "s/^version=.*/version=$new_version/" library.properties
 
-        # Commit updated library.properties
+        # Commit version bump
         git add library.properties
         git commit -m "Bump library version to $new_version"
         git push
