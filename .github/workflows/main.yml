@@ -2,8 +2,8 @@ name: Update tz_data.h
 
 on:
   schedule:
-    - cron: '0 0 * * 1'     # Every Monday at 00:00 UTC
-  workflow_dispatch:       # Also allow manual trigger
+    - cron: '0 0 * * 1'   # Every Monday at 00:00 UTC
+  workflow_dispatch:
 
 jobs:
   update-tz:
@@ -18,11 +18,13 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Run tz data update script
-      run: |
-        python3 scripts/update_tz_data.py
+    - name: Install requests
+      run: pip install requests
 
-    - name: Commit and push if changed
+    - name: Run tz data update script
+      run: python3 scripts/update_tz_data.py
+
+    - name: Commit and push if tz_data.h changed
       run: |
         git add src/tz_data.h
         git diff --cached --quiet || git commit -m "Update tz_data.h from zones.csv"
