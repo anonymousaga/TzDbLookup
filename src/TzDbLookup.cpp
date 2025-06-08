@@ -3,7 +3,7 @@
 
 const char* TzDbLookup::getPosix(const char* iana) {
   for (size_t i = 0; i < tzCount; ++i) {
-    if (strcmp(iana, tzTable[i].iana) == 0) {
+    if (strcasecmp(iana, tzTable[i].iana) == 0) {
       return tzTable[i].posix;
     }
   }
